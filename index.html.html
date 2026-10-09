@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dossier Locatif · Générateur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+:root{--bg:#07080d;--panel:rgba(255,255,255,.035);--line:rgba(255,255,255,.09);--txt:#eef0f7;--mute:#8a90a6;--a:#7c8cff;--b:#38e8c6;--ko:#ff6b8a;--r:18px;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
+background-image:radial-gradient(900px 500px at 8% -10%,rgba(124,140,255,.22),transparent 60%),radial-gradient(800px 500px at 105% 8%,rgba(56,232,198,.16),transparent 60%);background-attachment:fixed;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;font-weight:800;color:#06070b}
+h1{font-size:22px;margin:0;letter-spacing:-.02em}
+.sub{color:var(--mute);font-size:13px;margin-top:2px}
+.ring{position:relative;width:64px;height:64px}
+.ring svg{transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:14px}
+nav{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);padding:5px;border-radius:14px;margin-bottom:22px;overflow-x:auto}
+nav button{flex:1;min-width:max-content;background:none;border:0;color:var(--mute);padding:10px 14px;border-radius:10px;font:600 13px Inter,system-ui;cursor:pointer;transition:.2s}
+nav button.on{background:linear-gradient(135deg,rgba(124,140,255,.25),rgba(56,232,198,.18));color:var(--txt);box-shadow:inset 0 0 0 1px rgba(124,140,255,.4)}
+section{display:none;animation:in .35s ease}
+section.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;backdrop-filter:blur(12px);margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute);font-weight:600}
+input,select,textarea{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 13px;font:500 14px Inter,system-ui;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--a)}
+select option{background:#11131c}
+textarea{min-height:260px;resize:vertical;line-height:1.6}
+.toggle{flex-direction:row;align-items:center;gap:10px;color:var(--txt);font-size:14px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--b)}
+.item{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;margin-bottom:9px;background:rgba(0,0,0,.2);transition:.2s}
+.item.ok{border-color:rgba(56,232,198,.35);background:rgba(56,232,198,.06)}
+.dot{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px;font-weight:800;border:1.5px solid var(--line);color:transparent}
+.item.ok .dot{background:var(--b);border-color:var(--b);color:#06070b}
+.item.miss.req .dot{border-color:var(--ko)}
+.lbl{flex:1;font-size:14px;line-height:1.35}
+.tag{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:6px;margin-left:6px;vertical-align:middle}
+.tag.r{background:rgba(255,107,138,.14);color:var(--ko)}
+.tag.o{background:rgba(255,255,255,.07);color:var(--mute)}
+.up{font-size:12px;color:var(--a);cursor:pointer;border:1px dashed rgba(124,140,255,.45);border-radius:10px;padding:8px 10px;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.up input{display:none}
+.cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:18px 0 8px;font-weight:700}
+.alert{border-radius:14px;padding:13px 15px;font-size:13px;margin-bottom:14px;background:rgba(255,107,138,.08);border:1px solid rgba(255,107,138,.3);color:#ffc2cf}
+.alert.ok{background:rgba(56,232,198,.07);border-color:rgba(56,232,198,.3);color:#b9fff0}
+.btn{background:linear-gradient(135deg,var(--a),var(--b));color:#06070b;border:0;border-radius:12px;padding:12px 18px;font:700 14px Inter,system-ui;cursor:pointer;transition:transform .15s,opacity .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat div{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:14px;padding:14px}
+.stat b{display:block;font-size:22px;letter-spacing:-.02em}
+.stat span{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.preview{width:100%;height:560px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:14px}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;color:var(--mute)}
+#status{font-size:13px;color:var(--mute);margin-top:10px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="logo">DL</div>
+    <div><h1>Dossier Locatif</h1><div class="sub">Un dossier complet, sans pièce manquante</div></div>
+  </div>
+  <div class="ring" title="Complétude du dossier">
+    <svg width="64" height="64"><circle cx="32" cy="32" r="27" stroke="rgba(255,255,255,.08)" stroke-width="5" fill="none"/>
+    <circle id="ringC" cx="32" cy="32" r="27" stroke="url(#g)" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" style="transition:stroke-dashoffset .6s"/>
+    <defs><linearGradient id="g"><stop offset="0" stop-color="#7c8cff"/><stop offset="1" stop-color="#38e8c6"/></linearGradient></defs></svg>
+    <b id="ringT">0%</b>
+  </div>
+</header>
+
+<nav>
+  <button class="on" data-s="s1">1 · Profil</button>
+  <button data-s="s2">2 · Pièces</button>
+  <button data-s="s3">3 · Lettre</button>
+  <button data-s="s4">4 · Export PDF</button>
+</nav>
+
+<!-- 1. PROFIL -->
+<section id="s1" class="on">
+  <div class="card">
+    <h2>Votre situation</h2>
+    <div class="grid">
+      <label>Prénom<input id="prenom" placeholder="Camille"></label>
+      <label>Nom<input id="nom" placeholder="Martin"></label>
+      <label>Situation professionnelle
+        <select id="statut">
+          <option value="cdi">Salarié en CDI</option>
+          <option value="cdd">Salarié en CDD</option>
+          <option value="indep">Indépendant / entrepreneur</option>
+          <option value="etudiant">Étudiant</option>
+          <option value="retraite">Retraité</option>
+        </select>
+      </label>
+      <label>Revenus nets mensuels (€)<input id="revenus" type="number" min="0" placeholder="2 800"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Le logement visé</h2>
+    <div class="grid">
+      <label>Adresse ou référence de l'annonce<input id="bien" placeholder="12 rue des Lilas, 75011 Paris"></label>
+      <label>Loyer charges comprises (€)<input id="loyer" type="number" min="0" placeholder="950"></label>
+    </div>
+  </div>
+  <div class="card">
+    <label class="toggle"><input type="checkbox" id="garant"> J'ai un garant pour ce dossier</label>
+  </div>
+  <div class="row"><button class="btn" onclick="go('s2')">Continuer →</button></div>
+</section>
+
+<!-- 2. PIÈCES -->
+<section id="s2">
+  <div id="alertBox" class="alert"></div>
+  <div id="checklist"></div>
+  <div class="row"><button class="btn ghost" onclick="go('s1')">← Profil</button><button class="btn" onclick="go('s3')">Continuer →</button></div>
+</section>
+
+<!-- 3. LETTRE -->
+<section id="s3">
+  <div class="card">
+    <h2>Lettre de motivation <span class="mono">modifiable</span></h2>
+    <textarea id="lettre"></textarea>
+    <div class="row"><button class="btn ghost" onclick="genLetter(true)">Régénérer</button></div>
+  </div>
+  <div class="row"><button class="btn ghost" onclick="go('s2')">← Pièces</button><button class="btn" onclick="go('s4')">Continuer →</button></div>
+</section>
+
+<!-- 4. EXPORT -->
+<section id="s4">
+  <div class="card">
+    <h2>Dossier final</h2>
+    <div class="stat">
+      <div><b id="stPieces">0</b><span>Pièces jointes</span></div>
+      <div><b id="stReq">0</b><span>Obligatoires manquantes</span></div>
+      <div><b id="stPages">0</b><span>Pages estimées</span></div>
+    </div>
+    <div id="alert4" class="alert"></div>
+    <p class="mono" style="margin:0 0 6px">Ordre du PDF : page de garde, lettre, puis chaque pièce dans l'ordre de la checklist. Les images sont converties en pages A4.</p>
+    <div class="row">
+      <button class="btn" id="btnPdf" onclick="buildPdf()">Générer le PDF unique</button>
+    </div>
+    <div id="status"></div>
+    <iframe id="preview" class="preview" hidden></iframe>
+    <div class="row" id="dlRow" hidden><a id="dl" class="btn" download="dossier-location.pdf" style="text-decoration:none">Télécharger le PDF</a></div>
+  </div>
+</section>
+</div>
+
+<script>
+const ITEMS = [
+  {id:'id',   cat:'Identité',  label:"Pièce d'identité (recto/verso)", req:true},
+  {id:'dom',  cat:'Identité',  label:'Justificatif de domicile (moins de 3 mois)', req:true},
+  {id:'avis', cat:'Revenus',   label:"Dernier avis d'imposition", req:true},
+  {id:'rib',  cat:'Revenus',   label:'RIB', req:true},
+  {id:'bull', cat:'Revenus',   label:'3 derniers bulletins de salaire', req:true, when:'salarie'},
+  {id:'ctr',  cat:'Revenus',   label:'Contrat de travail ou attestation employeur', req:true, when:'salarie'},
+  {id:'ind',  cat:'Revenus',   label:'Bilans ou déclarations de revenus (2 ans)', req:true, when:'indep'},
+  {id:'kbis', cat:'Revenus',   label:'Extrait Kbis ou avis de situation', req:false, when:'indep'},
+  {id:'quit', cat:'Logement',  label:'Quittances de loyer (3 derniers mois)', req:false},
+  {id:'gid',  cat:'Garant',    label:"Pièce d'identité du garant", req:true, when:'garant'},
+  {id:'gav',  cat:'Garant',    label:"Avis d'imposition du garant", req:true, when:'garant'},
+  {id:'gbul', cat:'Garant',    label:'3 bulletins de salaire du garant', req:true, when:'garant'},
+  {id:'caut', cat:'Garant',    label:'Acte de cautionnement signé', req:true, when:'garant'}
+];
+const STATUS_LABEL = {cdi:'salarié en CDI',cdd:'salarié en CDD',indep:'travailleur indépendant',etudiant:'étudiant',retraite:'retraité'};
+const files = {};            // id -> {name, type, data(ArrayBuffer)}
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
+const eur = n => n ? Number(n).toLocaleString('fr-FR') + ' €' : '—';
+
+function profile(){
+  const s = val('statut');
+  return {
+    garant: $('garant').checked, statut: s,
+    salarie: s==='cdi'||s==='cdd', indep: s==='indep'
+  };
+}
+function applicable(){
+  const p = profile();
+  return ITEMS.filter(i => !i.when || (i.when==='garant' ? p.garant : i.when==='salarie' ? p.salarie : p.indep));
+}
+function go(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===id));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.s===id));
+  if(id==='s2') renderChecklist();
+  if(id==='s3') genLetter(false);
+  if(id==='s4') renderSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.s));
+
+function renderChecklist(){
+  const items = applicable();
+  let html = '', cat = '';
+  items.forEach(i=>{
+    if(i.cat!==cat){cat=i.cat; html += `<div class="cat">${cat}</div>`;}
+    const ok = !!files[i.id];
+    html += `<div class="item ${ok?'ok':'miss'} ${i.req?'req':''}">
+      <div class="dot">✓</div>
+      <div class="lbl">${i.label}${i.req?'<span class="tag r">Requis</span>':'<span class="tag o">Conseillé</span>'}
+        ${ok?`<div class="mono" style="margin-top:4px">${files[i.id].name}</div>`:''}</div>
+      <label class="up">${ok?'Remplacer':'Ajouter'}<input type="file" accept="application/pdf,image/png,image/jpeg" onchange="addFile('${i.id}',this)"></label>
+    </div>`;
+  });
+  $('checklist').innerHTML = html;
+  const req = items.filter(i=>i.req);
+  const missing = req.filter(i=>!files[i.id]);
+  const pct = req.length ? Math.round((req.length-missing.length)/req.length*100) : 100;
+  setRing(pct);
+  const box = $('alertBox');
+  if(missing.length){
+    box.className='alert';
+    box.innerHTML = `<b>${missing.length} pièce(s) obligatoire(s) manquante(s)</b> : ${missing.map(m=>m.label.split(' (')[0].toLowerCase()).join(', ')}.`;
+  } else {
+    box.className='alert ok';
+    box.innerHTML = '<b>Dossier complet.</b> Toutes les pièces obligatoires sont présentes.';
+  }
+}
+function setRing(p){
+  $('ringT').textContent = p+'%';
+  $('ringC').style.strokeDashoffset = 169.6 - 169.6*p/100;
+}
+function addFile(id, input){
+  const f = input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { files[id] = {name:f.name, type:f.type, data:r.result}; renderChecklist(); };
+  r.readAsArrayBuffer(f);
+}
+function genLetter(force){
+  const nom = `${val('prenom')} ${val('nom')}`.trim() || '[Prénom Nom]';
+  const p = profile();
+  const bien = val('bien') || '[adresse du bien]';
+  const txt = `Madame, Monsieur,
+
+Je me permets de vous adresser ma candidature pour la location du logement situé ${bien}, au loyer de ${eur(val('loyer'))} charges comprises.
+
+Je suis ${nom}, ${STATUS_LABEL[p.statut]}, avec des revenus nets mensuels de ${eur(val('revenus'))}. L'ensemble des justificatifs demandés est joint à ce courrier afin de faciliter l'étude de mon dossier.
+${p.garant ? "\nJe dispose également d'un garant, dont les pièces sont jointes.\n" : ''}
+Je reste disponible pour une visite à votre convenance et serais ravi(e) d'échanger avec vous.
+
+Dans l'attente de votre retour, je vous prie d'agréer, Madame, Monsieur, mes salutations distinguées.
+
+${nom}`;
+  if(force || !$('lettre').value.trim() || $('lettre').dataset.auto==='1'){
+    $('lettre').value = txt; $('lettre').dataset.auto='1';
+  }
+}
+$('lettre').addEventListener('input', ()=> $('lettre').dataset.auto='0');
+['prenom','nom','statut','revenus','bien','loyer','garant'].forEach(id=>$(id).addEventListener('input',()=>{
+  if($('lettre').dataset.auto==='1') genLetter(true);
+  if(document.querySelector('#s2.on')) renderChecklist();
+}));
+$('garant').addEventListener('change', ()=>{ renderChecklist(); genLetter(true); });
+$('statut').addEventListener('change', renderChecklist);
+
+function renderSummary(){
+  const items = applicable();
+  const present = items.filter(i=>files[i.id]);
+  const missReq = items.filter(i=>i.req && !files[i.id]);
+  $('stPieces').textContent = present.length;
+  $('stReq').textContent = missReq.length;
+  $('stPages').textContent = 2 + present.length;
+  $('alert4').className = missReq.length ? 'alert' : 'alert ok';
+  $('alert4').textContent = missReq.length
+    ? `Attention : ${missReq.length} pièce(s) obligatoire(s) manquante(s). Le PDF sera généré, mais le bailleur risque de le refuser.`
+    : 'Dossier complet. Vous pouvez générer le PDF unique.';
+}
+
+async function buildPdf(){
+  const btn = $('btnPdf'); btn.disabled = true; $('status').textContent = 'Assemblage en cours…';
+  try{
+    const {PDFDocument, StandardFonts, rgb} = PDFLib;
+    const out = await PDFDocument.create();
+    const font = await out.embedFont(StandardFonts.Helvetica);
+    const bold = await out.embedFont(StandardFonts.HelveticaBold);
+    const A4 = [595.28, 841.89], M = 56;
+    const ink = rgb(0.07,0.08,0.12), mute = rgb(0.45,0.47,0.55), accent = rgb(0.49,0.55,1);
+
+    const wrap = (t, f, size, max) => {
+      const lines = [];
+      t.split('\n').forEach(par=>{
+        let line = '';
+        par.split(' ').forEach(w=>{
+          const test = line ? line+' '+w : w;
+          if(f.widthOfTextAtSize(test,size) > max){ lines.push(line); line = w; } else line = test;
+        });
+        lines.push(line);
+      });
+      return lines;
+    };
+
+    // Page de garde
+    const cover = out.addPage(A4);
+    cover.drawRectangle({x:0,y:A4[1]-160,width:A4[0],height:160,color:rgb(0.04,0.05,0.08)});
+    cover.drawText('DOSSIER DE LOCATION', {x:M,y:A4[1]-80,size:24,font:bold,color:rgb(1,1,1)});
+    cover.drawText(`${val('prenom')} ${val('nom')}`.trim() || 'Candidat', {x:M,y:A4[1]-110,size:14,font,color:accent});
+    let y = A4[1]-210;
+    const kv = [
+      ['Logement', val('bien') || '—'],
+      ['Loyer CC', eur(val('loyer'))],
+      ['Revenus nets', eur(val('revenus')) + ' / mois'],
+      ['Situation', STATUS_LABEL[profile().statut] || '—'],
+      ['Garant', profile().garant ? 'Oui' : 'Non'],
+      ['Date', new Date().toLocaleDateString('fr-FR')]
+    ];
+    kv.forEach(([k,v])=>{
+      cover.drawText(k.toUpperCase(), {x:M,y,size:9,font:bold,color:mute});
+      cover.drawText(v, {x:M+130,y,size:12,font,color:ink}); y -= 26;
+    });
+    y -= 20;
+    cover.drawText('SOMMAIRE', {x:M,y,size:9,font:bold,color:mute}); y -= 22;
+    const items = applicable();
+    cover.drawText('Lettre de motivation', {x:M,y,size:11,font,color:ink}); y -= 18;
+    items.forEach(i=>{
+      const ok = !!files[i.id];
+      const mark = ok ? 'OK' : (i.req ? 'MANQUANT' : 'non fourni');
+      cover.drawText(i.label.split(' (')[0], {x:M,y,size:11,font,color:ink});
+      cover.drawText(mark, {x:A4[0]-M-70,y,size:9,font:bold,color: ok ? rgb(0.1,0.6,0.5) : rgb(0.85,0.25,0.4)});
+      y -= 18;
+    });
+
+    // Lettre
+    const letter = out.addPage(A4);
+    letter.drawText('Lettre de motivation', {x:M,y:A4[1]-M-10,size:16,font:bold,color:ink});
+    let ly = A4[1]-M-50;
+    wrap($('lettre').value, font, 11.5, A4[0]-2*M).forEach(line=>{
+      if(ly < M){ const p = out.addPage(A4); ly = A4[1]-M; }
+      const pg = out.getPages().at(-1);
+      pg.drawText(line, {x:M,y:ly,size:11.5,font,color:ink}); ly -= 17;
+    });
+
+    // Pièces
+    for(const i of items){
+      const f = files[i.id]; if(!f) continue;
+      if(f.type === 'application/pdf'){
+        const src = await PDFDocument.load(f.data, {ignoreEncryption:true});
+        const pages = await out.copyPages(src, src.getPageIndices());
+        pages.forEach(p=>out.addPage(p));
+      } else {
+        const img = f.type === 'image/png' ? await out.embedPng(f.data) : await out.embedJpg(f.data);
+        const pg = out.addPage(A4);
+        const maxW = A4[0]-2*M, maxH = A4[1]-2*M;
+        const s = Math.min(maxW/img.width, maxH/img.height);
+        const w = img.width*s, h = img.height*s;
+        pg.drawText(i.label.split(' (')[0], {x:M,y:A4[1]-M+10,size:10,font:bold,color:mute});
+        pg.drawImage(img, {x:(A4[0]-w)/2, y:(A4[1]-h)/2 - 10, width:w, height:h});
+      }
+    }
+
+    const bytes = await out.save();
+    const url = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}));
+    const pv = $('preview'); pv.src = url; pv.hidden = false;
+    $('dl').href = url; $('dlRow').hidden = false;
+    $('status').textContent = `PDF généré · ${out.getPageCount()} pages · ${(bytes.length/1024).toFixed(0)} Ko`;
+  }catch(e){
+    console.error(e);
+    $('status').textContent = 'Erreur pendant la génération. Vérifiez que les fichiers sont des PDF, PNG ou JPG valides.';
+  }finally{ btn.disabled = false; }
+}
+
+// Init
+genLetter(false);
+renderChecklist();
+</script>
+</body>
+</html>
